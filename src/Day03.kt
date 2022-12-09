@@ -1,4 +1,3 @@
-import java.lang.Exception
 
 fun main() {
     val input = readInput("Day03")
