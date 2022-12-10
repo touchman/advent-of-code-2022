@@ -1,6 +1,5 @@
 fun main() {
-//    val input = readInput("Day06")
-    val input = listOf("mjqjpqmgbljsphdztnvjfqwrcgsmlb")
+    val input = readInput("Day06")
 
     fun part1(input: List<String>): Int {
         val toCharArray = input[0].toCharArray()
@@ -30,5 +29,8 @@ fun main() {
     }
 
     println(part1(input))
-    println(part2(input))
+//    println(part2(input))
+    println(input[0].findMarker(14))
 }
+
+fun String.findMarker(n: Int) = n + this.windowed(n).indexOfFirst { it.toSet().size == it.length }
