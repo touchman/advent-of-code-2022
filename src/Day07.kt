@@ -1,9 +1,28 @@
 fun main() {
     val input = readInput("Day07")
-
     val hierarchy: Folder = createHierarchy(input)
 
-    fun part1(input: List<String>): Int {
+    fun findAllFoldersWithFileSize(folderNameToSize: MutableMap<String, Long>, pointer: Folder): Pair<String, Long> {
+        var currentName = pointer.parent?.name + "/" + pointer.name
+
+        pointer.children.forEach {
+            val (name, size) = findAllFoldersWithFileSize(folderNameToSize, it)
+            folderNameToSize[name] = size
+            currentName = pointer.parent?.name + "/" + name
+        }
+
+        return currentName to pointer.files.sumOf { it.size }
+    }
+/*
+"a/e" -> {Long@906} 584
+"root/a/e" -> {Long@908} 94269
+"root/d" -> {Long@910} 24933642
+ */
+    fun part1(hierarchy: Folder): Long {
+        val allFolders = mutableMapOf<String, Long>()
+        findAllFoldersWithFileSize(allFolders, hierarchy)
+
+//        return allFolders.filter { it.value <= 100_000 }
         return 0
     }
 
@@ -11,20 +30,18 @@ fun main() {
         return 0
     }
 
-    println(part1(input))
+    println(part1(hierarchy))
     println(part2(input))
 }
 
 fun createHierarchy(input: List<String>): Folder {
     val hierarchy = Folder("root", mutableListOf())
-    var currentPointer: Folder? = null
+    var currentPointer: Folder? = hierarchy
 
-    input.forEach { line ->
+    for (i in 1..input.lastIndex) {
+        val line = input[i]
         when {
-            line.contains("$ cd /") -> {
-                currentPointer = hierarchy
-            }
-            line.contains("$") && line.contains("cd") -> {
+            line.contains("$ cd") -> {
                 currentPointer = if (line.contains("..")) {
                     currentPointer?.parent
                 } else {
