@@ -1,37 +1,30 @@
 fun main() {
     val input = readInput("Day07")
     val hierarchy: Folder = createHierarchy(input)
+    val allFolders = mutableMapOf<String, Long>()
+    findAllFoldersWithFileSize(allFolders, hierarchy)
+    addSizeOfSubFolders(allFolders)
 
-    fun findAllFoldersWithFileSize(folderNameToSize: MutableMap<String, Long>, pointer: Folder): Pair<String, Long> {
-        var currentName = pointer.parent?.name + "/" + pointer.name
+    fun part1(allFolders: MutableMap<String, Long>): Long =
+        allFolders.values.filter { it <= 100_000 }.sum()
 
-        pointer.children.forEach {
-            val (name, size) = findAllFoldersWithFileSize(folderNameToSize, it)
-            folderNameToSize[name] = size
-            currentName = pointer.parent?.name + "/" + name
-        }
+    fun part2(allFolders: MutableMap<String, Long>): Long {
+        val unusedSpace = 70_000_000 - allFolders["/root"]!!
+        val requiredMemoryForDelete = 30_000_000 - unusedSpace
 
-        return currentName to pointer.files.sumOf { it.size }
-    }
-/*
-"a/e" -> {Long@906} 584
-"root/a/e" -> {Long@908} 94269
-"root/d" -> {Long@910} 24933642
- */
-    fun part1(hierarchy: Folder): Long {
-        val allFolders = mutableMapOf<String, Long>()
-        findAllFoldersWithFileSize(allFolders, hierarchy)
+        return allFolders.values.sortedDescending()
+            .let { sorted ->
+                val indexOfTheClosest = sorted.mapIndexed { index, l -> index to l - requiredMemoryForDelete }
+                    .filter { it.second > 0 }
+                    .minByOrNull { pair -> pair.second }!!.first
 
-//        return allFolders.filter { it.value <= 100_000 }
-        return 0
+                sorted[indexOfTheClosest]
+            }
+
     }
 
-    fun part2(input: List<String>): Int {
-        return 0
-    }
-
-    println(part1(hierarchy))
-    println(part2(input))
+    println(part1(allFolders))
+    println(part2(allFolders))
 }
 
 fun createHierarchy(input: List<String>): Folder {
@@ -60,6 +53,37 @@ fun createHierarchy(input: List<String>): Folder {
     }
 
     return hierarchy
+}
+
+fun findAllFoldersWithFileSize(folderNameToSize: MutableMap<String, Long>, pointer: Folder, incrementingName: String = ""): Pair<String, Long> {
+    val currentName = incrementingName + "/" + pointer.name
+
+    pointer.children.forEach {
+        val (name, size) = findAllFoldersWithFileSize(folderNameToSize, it, currentName)
+        folderNameToSize[name] = size
+    }
+
+    if (currentName == "/root") {
+        folderNameToSize[currentName] = pointer.files.sumOf { it.size }
+    }
+
+    return currentName to pointer.files.sumOf { it.size }
+}
+
+fun addSizeOfSubFolders(allFolders: MutableMap<String, Long>) {
+    allFolders.forEach { (t, u) ->
+        val sizeOfAllSubFolders = allFolders.keys
+            .filter { it.contains(t) && t != it && it.substringAfter(t).split("/").size == 2 }
+            .map { allFolders[it]!! }
+            .takeIf { it.isNotEmpty() }
+            ?.reduce { acc, l -> acc + l }
+
+        sizeOfAllSubFolders?.let {
+            if (sizeOfAllSubFolders != 0L) {
+                allFolders[t] = u + sizeOfAllSubFolders
+            }
+        }
+    }
 }
 
 fun createFileInFolder(line: String, currentPointer: Folder?) {
